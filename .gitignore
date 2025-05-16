@@ -1,0 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# VS Code settings (optional)
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# pytest cache
+.pytest_cache/
+
+# mypy cache
+.mypy_cache/
+
+# coverage reports
+htmlcov/
+coverage.xml
+.coverage
+
+# pipenv
+Pipfile.lock
+
+# pyproject build artifacts
+*.log
+*.tmp
+*.bak
+*.swp
+
+# SQLAlchemy / Alembic cache (if any)
+__alembic__/  # if used and you want to exclude generated migration cache (optional)
+
+# Jupyter Notebook checkpoints (if any)
+.ipynb_checkpoints/
+
+# SQLite database (if temporary or local)
+*.sqlite3
+
+# dotenv or local secrets (optional)
+.env
+.env.*
+
+# IDE specific
+.idea/
+*.iml
+
+# System specific
+Thumbs.db
+ehthumbs.db

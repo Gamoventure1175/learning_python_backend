@@ -12,7 +12,7 @@ class UserResponse(UserBase):
     createdAt: datetime
     model_config = {
         'from_attributes': True
-    } 
+    }
     
 class UserLogin(UserBase):
     password: str

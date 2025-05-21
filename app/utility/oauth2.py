@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from sqlmodel import select
+from app.config import settings
 
 from app.db.connection import SessionDep
 from app.models.users import User
@@ -10,23 +11,22 @@ from app.validation.tokens import TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-JWT_SECRET = "b9d7d05210faf8094381041e9b8b941212b0dfb6fe8dfa9c2eedb09af39070c2"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUETS = 30
+jwt_secret = settings.secret_key
+algorithm = settings.algorithm
 
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    exp = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUETS)
+    exp = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expires_minutes)
     to_encode.update({"exp": exp})
 
-    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, jwt_secret, algorithm=algorithm)
     return encoded_jwt
 
 
 def verify_access_token(token: str, credentials_exception):
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, jwt_secret, algorithms=[algorithm])
         user_id: int = payload.get("user_id")
 
         if not user_id:

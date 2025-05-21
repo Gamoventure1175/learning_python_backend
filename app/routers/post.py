@@ -16,7 +16,7 @@ async def create_post(
     session: SessionDep,
     current_user: UserResponse = Depends(get_current_user),
 ):
-    db_post = Post(**post.model_dump())
+    db_post = Post(owner_id=current_user.id, **post.model_dump())
     session.add(db_post)
     session.commit()
     session.refresh(db_post)
@@ -28,8 +28,12 @@ async def get_all_posts(
     sessoin: SessionDep,
     session: SessionDep,
     current_user: UserResponse = Depends(get_current_user),
+    limit: int = 10,
+    skip: int = 0,
 ):
-    all_posts = sessoin.exec(select(Post)).all()
+    all_posts = sessoin.exec(
+        select(Post).where(Post.owner_id == current_user.id).limit(limit).offset(skip)
+    ).all()
     if all_posts == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Could not find posts"
@@ -48,6 +52,13 @@ async def get_post_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Could not find post with id {id}",
         )
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Not authorised to perform this request",
+        )
+
     return post
 
 
@@ -56,7 +67,7 @@ async def update_post(
     session: SessionDep,
     post: UpdatePost,
     id: int,
-    user_id: int = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     post_to_update = session.get(Post, id)
     if not post_to_update:
@@ -64,6 +75,13 @@ async def update_post(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Could not find post to update with id {id}",
         )
+
+    if post_to_update.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Not authorised to perform this request",
+        )
+
     post_data = post.model_dump()
     post_to_update.sqlmodel_update(post_data)
     session.add(post_to_update)
@@ -82,6 +100,13 @@ async def delete_post(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Could not find post with id {id}",
         )
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Not authorised to perform this request",
+        )
+
     session.delete(post)
     session.commit()
 

@@ -10,6 +10,7 @@ class CreateUser(UserBase):
     
 class UserResponse(UserBase):
     createdAt: datetime
+    id: int
     model_config = {
         'from_attributes': True
     }

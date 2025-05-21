@@ -1,5 +1,6 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException
 from pydantic import EmailStr
+from app.utility.oauth2 import get_current_user
 from app.utility.password import hash_password
 from app.db.connection import SessionDep
 from app.models.users import User
@@ -22,8 +23,8 @@ async def create_user(session: SessionDep, user: CreateUser):
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=UserResponse)
-async def get_user_by_email(email: EmailStr, session: SessionDep):
-    user = session.exec(select(User).where(User.email == email)).first()
+async def get_current_user_information(session: SessionDep, current_user: UserResponse = Depends(get_current_user)):
+    user = session.exec(select(User).where(User.id == current_user.id)).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

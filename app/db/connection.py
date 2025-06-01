@@ -4,6 +4,7 @@ from sqlmodel import SQLModel, Session
 from fastapi import Depends
 from app.models.posts import Post
 from app.models.users import User
+from app.models.vote import Vote
 from app.config import settings
 
 POSTGRESQL_CONNECTION_STRING = f"postgresql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"

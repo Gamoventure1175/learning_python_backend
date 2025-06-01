@@ -17,3 +17,4 @@ class UserResponse(UserBase):
     
 class UserLogin(UserBase):
     password: str
+    

@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Body
+from sqlalchemy import func
 from sqlmodel import select
 from app.models.posts import Post
+from app.models.vote import Vote
 from app.db.connection import SessionDep
-from typing import Annotated, List
+from typing import Annotated
 from app.utility.oauth2 import get_current_user
-from app.validation.post import CreatePost, GetPost, UpdatePost
+from app.validation.post import CreatePost, GetPost, PostWithVotes, UpdatePost
 from app.validation.users import UserResponse
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
@@ -23,35 +25,51 @@ async def create_post(
     return db_post
 
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=List[GetPost])
+@router.get("/", status_code=status.HTTP_200_OK, response_model=list[PostWithVotes])
 async def get_all_posts(
-    sessoin: SessionDep,
     session: SessionDep,
     current_user: UserResponse = Depends(get_current_user),
     limit: int = 10,
     skip: int = 0,
 ):
-    all_posts = sessoin.exec(
-        select(Post).where(Post.owner_id == current_user.id).limit(limit).offset(skip)
-    ).all()
-    if all_posts == None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Could not find posts"
-        )
+    statement = (
+        select(Post, func.count(Vote.post_id).label("votes"))  # type:ignore
+        .outerjoin(Vote)
+        .where(Post.owner_id == current_user.id)
+        .group_by(Post.id)  # type:ignore
+        .limit(limit)
+        .offset(skip)
+    )
+    result = session.exec(statement).all()
 
-    return all_posts
+    response = [
+        PostWithVotes(post=GetPost.model_validate(post), votes=votes)
+        for post, votes in result
+    ]
+    return response
 
 
-@router.get("/{id}", status_code=status.HTTP_200_OK, response_model=GetPost)
+@router.get("/{id}", status_code=status.HTTP_200_OK, response_model=PostWithVotes)
 async def get_post_by_id(
     id: int, session: SessionDep, current_user: UserResponse = Depends(get_current_user)
 ):
-    post = session.exec(select(Post).where(Post.id == id)).first()
-    if not post:
+    statement = (
+        select(Post, func.count(Vote.post_id).label("votes"))  # type: ignore
+        .outerjoin(Vote)
+        .where(Post.id == id)
+        .group_by(Post.id)  # type: ignore
+    )
+
+    result = session.exec(statement).first()
+
+    if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Could not find post with id {id}",
         )
+        
+    post, votes = result
+
 
     if post.owner_id != current_user.id:
         raise HTTPException(
@@ -59,7 +77,8 @@ async def get_post_by_id(
             detail=f"Not authorised to perform this request",
         )
 
-    return post
+    response = PostWithVotes(post=GetPost.model_validate(post), votes=votes)
+    return response
 
 
 @router.put("/{id}", status_code=status.HTTP_200_OK, response_model=GetPost)
